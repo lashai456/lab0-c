@@ -19,6 +19,7 @@ typedef struct ELE {
      * This array needs to be explicitly allocated and freed
      */
     char *value;
+    size_t value_len;
     struct ELE *next;
 } list_ele_t;
 
@@ -29,6 +30,8 @@ typedef struct {
      *        to efficiently implement q_size and q_insert_tail.
      */
     /* TODO: Remove the above comment when you are about to implement. */
+    list_ele_t *tail;
+    size_t size;
 } queue_t;
 
 /* Operations on queue */
