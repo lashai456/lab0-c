@@ -5,15 +5,39 @@
 #include "harness.h"
 #include "queue.h"
 
-#define DEBUG 1
+void print_data(queue_t *q)
+{
+#if DEBUG
+    list_ele_t *current = q->head;
+    while (current != NULL) {
+        printf("%s,", current->value);
+        current = current->next;
+    }
+    printf("\n");
+#endif
+}
+
+int count_input_data(char *s)
+{
+    int len = 1;
+    char *tmp = s;
+    while (*tmp != '\0') {
+        len = len + 1;
+        tmp++;
+    }
+    return len;
+}
+
 /*
  * Create empty queue.
  * Return NULL if could not allocate space.
  */
 queue_t *q_new()
 {
+#if DEBUG
+    printf("%s\n", __func__);
+#endif
     queue_t *q = malloc(sizeof(queue_t));
-    /* TODO: What if malloc returned NULL? */
     if (!q) {
         return NULL;
     }
@@ -26,8 +50,14 @@ queue_t *q_new()
 /* Free all storage used by queue */
 void q_free(queue_t *q)
 {
-    /* TODO: How about freeing the list elements and the strings? */
-    /* Free queue structure */
+#if DEBUG
+    printf("%s\n", __func__);
+#endif
+    if (!q) {
+        printf("no need to free\n");
+        return;
+    }
+
     list_ele_t *current;
     while (q->head != NULL) {
         current = q->head->next;
@@ -47,34 +77,48 @@ void q_free(queue_t *q)
  */
 bool q_insert_head(queue_t *q, char *s)
 {
+#if DEBUG
+    printf("%s,", __func__);
+#endif
     list_ele_t *newh;
-    /* TODO: What should you do if the q is NULL? */
+    int len = 0;
+
+    if (!q) {
+        goto exit;
+    }
+
     newh = malloc(sizeof(list_ele_t));
     if (!newh) {
-        return false;
+        goto exit;
     }
-    /* Don't forget to allocate space for the string and copy it */
-    int len = strlen(s) + 1;
+
+    len = count_input_data(s);
+    if (len == 0) {
+        goto insert_fail;
+    }
+
     newh->value = (char *) malloc(sizeof(char) * len);
-    if (newh->value) {
-        free(newh);
-        return false;
+    if (!newh->value) {
+        goto insert_fail;
     }
+
     newh->value_len = len;
     memset(newh->value, 0x00, len);
     memcpy(newh->value, s, len);
     newh->next = NULL;
-    /* What if either call to malloc returns NULL? */
     newh->next = q->head;
     q->head = newh;
     if (q->tail == NULL) {
         q->tail = q->head;
     }
     q->size = q->size + 1;
-#if DEBUG
-    printf("ih: %s\n", s);
-#endif
+    print_data(q);
     return true;
+
+insert_fail:
+    free(newh);
+exit:
+    return false;
 }
 
 /*
@@ -86,28 +130,36 @@ bool q_insert_head(queue_t *q, char *s)
  */
 bool q_insert_tail(queue_t *q, char *s)
 {
-    /* TODO: You need to write the complete code for this function */
-    /* Remember: It should operate in O(1) time */
-    /* TODO: Remove the above comment when you are about to implement. */
+#if DEBUG
+    printf("%s,", __func__);
+#endif
 
     list_ele_t *newh;
-    /* TODO: What should you do if the q is NULL? */
+    int len = 0;
+
+    if (!q) {
+        goto exit;
+    }
+
     newh = malloc(sizeof(list_ele_t));
     if (!newh) {
-        return false;
+        goto exit;
     }
-    /* Don't forget to allocate space for the string and copy it */
-    int len = strlen(s) + 1;
+
+    len = count_input_data(s);
+    if (len == 0) {
+        goto insert_fail;
+    }
+
     newh->value = (char *) malloc(sizeof(char) * len);
     if (!newh->value) {
-        free(newh);
-        return false;
+        goto insert_fail;
     }
+
     newh->value_len = len;
     memset(newh->value, 0x00, len);
     memcpy(newh->value, s, len);
     newh->next = NULL;
-    /* What if either call to malloc returns NULL? */
     if (q->tail == NULL) {
         q->tail = newh;
     } else {
@@ -115,10 +167,13 @@ bool q_insert_tail(queue_t *q, char *s)
         q->tail = newh;
     }
     q->size = q->size + 1;
-#if DEBUG
-    printf("it: %s\n", s);
-#endif
+    print_data(q);
     return true;
+
+insert_fail:
+    free(newh);
+exit:
+    return false;
 }
 
 /*
@@ -131,27 +186,26 @@ bool q_insert_tail(queue_t *q, char *s)
  */
 bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
 {
-    /* TODO: You need to fix up this code. */
-    /* TODO: Remove the above comment when you are about to implement. */
-    if (q == NULL || q->head == NULL) {
+#if DEBUG
+    printf("%s\n", __func__);
+#endif
+
+    if (q == NULL || q->size == 0 || bufsize == 0) {
         return false;
     }
+
     int copy_len = 0;
     list_ele_t *current = q->head;
     q->head = q->head->next;
     q->size = q->size - 1;
-    copy_len = current->value_len >= bufsize ? bufsize - 1 : current->value_len;
+    copy_len = current->value_len >= bufsize ? bufsize : current->value_len;
+    memset(sp, 0x00, bufsize);
     strncpy(sp, current->value, copy_len);
-    if (copy_len == bufsize - 1) {
-        sp[bufsize - 1] = '\0';
-    }
+    sp[copy_len - 1] = '\0';
 
     free(current->value);
     free(current);
-
-#if DEBUG
-    printf("sp: %s\n", sp);
-#endif
+    print_data(q);
     return true;
 }
 
@@ -161,10 +215,10 @@ bool q_remove_head(queue_t *q, char *sp, size_t bufsize)
  */
 int q_size(queue_t *q)
 {
-    /* TODO: You need to write the code for this function */
-    /* Remember: It should operate in O(1) time */
-    /* TODO: Remove the above comment when you are about to implement. */
-    return q->size;
+#if DEBUG
+    printf("%s\n", __func__);
+#endif
+    return q == NULL ? 0 : q->size;
 }
 
 /*
@@ -176,9 +230,11 @@ int q_size(queue_t *q)
  */
 void q_reverse(queue_t *q)
 {
-    if (q == NULL || q->head == NULL) {
-        return;
-    } else if (q->size == 1) {
+#if DEBUG
+    printf("%s\n", __func__);
+#endif
+
+    if (q == NULL || q->size <= 1) {
         return;
     }
 
@@ -205,33 +261,56 @@ void q_reverse(queue_t *q)
  */
 void q_sort(queue_t *q)
 {
-    /* TODO: You need to write the code for this function */
-    /* TODO: Remove the above comment when you are about to implement. */
-    if (q->size <= 1) {
+#if DEBUG
+    printf("%s\n", __func__);
+#endif
+    if (q == NULL || q->size <= 1) {
         printf("no need sort\n");
         return;
     }
-    list_ele_t *current;
-    list_ele_t *round = q->head;
-    char *tmp_addr = NULL;
-    while (round->next != NULL) {
-        current = round->next;
-        while (current != NULL) {
-            if (strcmp(current->value, round->value) < 0) {
-                tmp_addr = current->value;
-                current->value = round->value;
-                round->value = tmp_addr;
-            }
-            current = current->next;
-        }
-        round = round->next;
+    q->head = merge_sort(q->head);
+}
+
+list_ele_t *merge(list_ele_t *left, list_ele_t *right)
+{
+    if (!left) {
+        return right;
     }
 
-#if 0
-    current = q->head;
-    while (current != NULL) {
-        printf("ih: %s\n", current->value);
-        current = current->next;
+    if (!right) {
+        return left;
     }
-#endif
+
+    if (strcmp(left->value, right->value) < 0) {
+        left->next = merge(left->next, right);
+        return left;
+    } else {
+        right->next = merge(left, right->next);
+        return right;
+    }
+}
+
+list_ele_t *merge_sort(list_ele_t *head)
+{
+    if (!head || head->next == NULL) {
+        return head;
+    }
+
+    list_ele_t *slow = head;
+    list_ele_t *fast = head->next;
+    list_ele_t *left;
+    list_ele_t *right;
+
+    while (fast && fast->next) {
+        slow = slow->next;
+        fast = fast->next->next;
+    }
+
+    fast = slow->next;
+    slow->next = NULL;
+
+    left = merge_sort(head);
+    right = merge_sort(fast);
+
+    return merge(left, right);
 }
